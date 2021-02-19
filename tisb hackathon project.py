@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[64]:
-
+#!/usr/bin/env python
+# coding: utf-8
 
 import tkinter as tk
 from tkinter import ttk
@@ -12,32 +12,62 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import statistics  
+import math
 
 file_path = "C:/Users/aparna/Downloads/energy_consumption_2020_Sahiti.csv"
 file_data = pd.read_csv(file_path)
-
-def my_function():
-    canvas.configure(scrollregion=canvas.bbox("all"))
-    
-
-
-def raise_frame(frame):
-    frame.tkraise()
-    
-
-def update():
-    raise_frame(update_frame)
-    update_frame.pack()
-    
-
+months = ['January','February', 'March','April','May','June','July','August','September','October','November','December']
+numbers_to_month = {1:'January', 2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
 key = {'January': 1, 'February': 2, 'March':3, 'April':4, 'May': 5, 'June': 6, 'July': 7, 'August':8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
 
 villa_no = 1
 month = 'January'
+
+
+def my_function():
+    canvas.configure(scrollregion=canvas.bbox("all"))
+ 
+
+def raise_frame(frame):
+    frame.tkraise()
+    frame.pack()
+    
+def update():
+    raise_frame(update_frame)
+    
+
+def generate_green_score():
+    x = 0.9
+    y = 2.1
+    electricity_scores = []
+    
+    for month in months:
+        monthwise_electricity = file_data.loc[(file_data['Month'] == month)]
+        monthwise_electricity["rank"]=monthwise_electricity.Electricity_per_person.rank(pct = True)
+        electricity_scores.append(monthwise_electricity.loc[(monthwise_electricity['HouseID']==villa_no), "rank"].values[0])
+    print(electricity_scores[1])
+    water_scores = []
+    for month in months:
+        monthwise_water = file_data.loc[(file_data['Month'] == month)]
+        monthwise_water["rank"]=monthwise_water.Water_per_person.rank(pct = True)
+        water_scores.append(monthwise_water.loc[(monthwise_water['HouseID']==villa_no), "rank"].values[0])
+    print(water_scores)
+    for num in range(0,12):
+        print(electricity_scores[num])
+        green_score = (electricity_scores[num]+ water_scores[num])/2
+        green_score = green_score*100
+        print(green_score)
+        this_month = numbers_to_month[num+1]
+        file_data.loc[(file_data['HouseID']==villa_no) & (file_data['Month']==this_month),"Green_score"]= round((100-green_score),2)
+        
+generate_green_score()
+
+
 electricity = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Electricity"]].values[0]
 
 water = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Water"]].values[0]
-#score = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Green_Score"]].values[0]
+score = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Green_score"]].values[0]
 
 
 root = tk.Tk()
@@ -51,14 +81,15 @@ xscrollbar = ttk.Scrollbar(container, orient="horizontal", command=canvas.xview)
 
 def cancel():
     raise_frame(scrollable_frame)
-    scrollable_frame.pack()
+    update_frame.pack_forget()
+    
 
 def bind(event):
     canvas.yview_scroll(-1*(event.delta/120), "units")
 
 scrollable_frame.bind(
     "<Configure>",
-    my_function()
+    my_function() 
 )
 
 yscrollbar.pack(side="right", fill="y")
@@ -69,21 +100,21 @@ canvas.configure(xscrollcommand=xscrollbar.set)
 canvas.config(height = 650, width = 1100)
 
 
-label = tk.Label(scrollable_frame, text = str(villa_no) + " green report", fg = "green", height = 2, anchor ='n', underline = 8)
+label = tk.Label(scrollable_frame, text = 'Villa' +str(villa_no) + " green report", fg = "green", height = 2, anchor ='n', underline = 8)
 label.config(font=("Courier", 44))
 label.pack()
 
-electricity_label = tk.Label(scrollable_frame, text = 'electricity:' + str(electricity), fg = "green", underline = 0, anchor = 'w')
+electricity_label = tk.Label(scrollable_frame, text = 'Electricity:' + str(round(electricity[0],2))+' kilowatts', fg = "green", underline = 0, anchor = 'w')
 electricity_label.config(font = ("Courier", 20))
 electricity_label.pack()
 
-water_label = tk.Label(scrollable_frame, text = "water usage:" + str(water), fg = 'green', underline = 0, anchor = 'w')
+water_label = tk.Label(scrollable_frame, text = "Water usage:" + str(round(water[0],2))+' litres', fg = 'green', underline = 0, anchor = 'w')
 water_label.config(font=("Courier", 20))
 water_label.pack()
 
-#green_score_label = tk.Label(scrollable_frame, text = "green score:" + str(score), fg = 'green', underline = 0, anchor = 'w')
-#green_score_label.config(font=("Courier", 20))
-#green_score_label.pack()
+green_score_label = tk.Label(scrollable_frame, text = "green score:" + str(score), fg = 'green', underline = 0, anchor = 'w')
+green_score_label.config(font=("Courier", 20))
+green_score_label.pack()
 
 general_label = tk.Label(scrollable_frame, text = "green score is________ than last months showing _______", fg = 'green', underline = 0, anchor = 'w', height = 2)
 general_label.config(font=("Courier", 20))
@@ -122,51 +153,86 @@ def submit():
         file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),"Num_People"]= people_data
     print(file_data)
     raise_frame(scrollable_frame)
-    scrollable_frame.pack()
-
-numbers_to_month = {1:'January', 2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
-green_scores=[]
-def generate_green_score():
-    x = 0.9
-    y = 2.1
-    electricity_scores = []
-    months = ['January','February', 'March','April','May','June','July','August','September','October','November','December']
-    for month in months:
-        monthwise_electricity = file_data.loc[(file_data['Month'] == month)]
-        monthwise_electricity["rank"]=monthwise_electricity.Electricity_per_person.rank(pct = True)
-        electricity_scores.append(monthwise_electricity.loc[(monthwise_electricity['HouseID']==villa_no), "rank"].values[0])
-    print(electricity_scores[1])
-    water_scores = []
-    for month in months:
-        monthwise_water = file_data.loc[(file_data['Month'] == month)]
-        monthwise_water["rank"]=monthwise_water.Water_per_person.rank(pct = True)
-        water_scores.append(monthwise_water.loc[(monthwise_water['HouseID']==villa_no), "rank"].values[0])
-    print(water_scores)
-    for num in range(0,12):
-        print(electricity_scores[num])
-        green_score = electricity_scores[num]*x + water_scores[num]*y
-        print(green_score)
-        this_month = numbers_to_month[num+1]
-        file_data.loc[(file_data['HouseID']==villa_no) & (file_data['Month']==this_month),"Green_score"]= green_score
-        
-        
-
+    update_frame.pack_forget()
     
-generate_green_score()
+prediction_frame = Frame(canvas, width = 500, height = 500, bd = 0, padx = 100)
+
 def create_plot_1():
     global file_data
     global villa_no
     file_data.query('HouseID == @villa_no ', inplace = True)
  
     graph = plt.figure(figsize=(12, 6))
-    sns.lineplot(x=file_data['Month'], y=file_data['Green_score'])
+    sns.barplot(x=file_data['Month'], y=file_data['Electricity'])
     
     plt.xlabel("Months")
-    plt.title("Green scores")
+    plt.title("Electricity")
     return graph
-fig = create_plot()
-canvas_1 = FigureCanvasTkAgg(fig, scrollable_frame)  
+
+fig = create_plot_1()
+canvas_1 = FigureCanvasTkAgg(fig, prediction_frame)  
 canvas_1.get_tk_widget().pack()
+
+def create_plot_3():
+    global file_data
+    global villa_no
+    file_data.query('HouseID == @villa_no ', inplace = True)
+ 
+    graph = plt.figure(figsize=(12, 6))
+    sns.barplot(x=file_data['Month'], y=file_data['Water'])
+    
+    plt.xlabel("Months")
+    plt.title("Water")
+    return graph
+
+def back():
+    raise_frame(scrollable_frame)
+    prediction_frame.pack_forget()
+
+back_button = Button(prediction_frame, text = 'Back', command=back)
+
+def predictions():
+    global months
+    electricity_store = []
+    water_store = []
+    green_score_store=[]
+    raise_frame(prediction_frame)
+    
+    for month in months:
+        per_month_elec = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Electricity"]].values[0]
+        electricity_store.append(per_month_elec)
+        per_month_water = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Water"]].values[0]
+        water_store.append(per_month_water)
+        per_month_green_score = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Green_score"]].values[0]
+        green_score_store.append(per_month_green_score)
+    electricity_mean = sum(electricity_store)/len(electricity_store)
+    water_mean = sum(water_store)/len(water_store)
+    green_score_mean = sum(green_score_store)/len(green_score_store)
+    electricity_var = [(x-electricity_mean)**2 for x in electricity_store]
+    electricity_std = math.sqrt(sum(electricity_var)/len(electricity_var))
+    electricity_ste = electricity_std/(math.sqrt(len(electricity_store)))
+    upper_electricity = electricity_mean + 1.96*electricity_ste
+    lower_electricity = electricity_mean - 1.96*electricity_ste
+    electricity_prediction = Label(prediction_frame, text = "Predicted electricity for next month is in the range of :" + str(lower_electricity) +':'+ str(upper_electricity) )
+    electricity_prediction.pack()  
+    water_var = [(x-water_mean)**2 for x in water_store]
+    water_std = math.sqrt(sum(water_var)/len(water_var))
+    water_ste = water_std/(math.sqrt(len(water_store)))
+    upper_water = water_mean + 1.96*water_ste
+    lower_water = water_mean - 1.96*water_ste
+    print(lower_water)
+    
+    fig_2 = create_plot_3()
+    canvas_1 = FigureCanvasTkAgg(fig, prediction_frame)  
+    canvas_1.get_tk_widget().pack()
+    water_prediction = Label(prediction_frame, text = "Predicted water usage for next month is in the range of :" + str(round(lower_water[0],2)) +":"+ str(round(upper_water[0],2)) )
+    water_prediction.pack()  
+    print(electricity_prediction)
+
+predict_button = Button(scrollable_frame, text = 'predict', command=predictions)
+predict_button.pack()
+
+
 
 def create_plot_2():
     global file_data
@@ -179,7 +245,7 @@ def create_plot_2():
     plt.xlabel("Months")
     plt.title("Green scores")
     return graph
-fig_2 = create_plot()
+fig_2 = create_plot_2()
 canvas_2 = FigureCanvasTkAgg(fig_2, scrollable_frame)  
 canvas_2.get_tk_widget().pack()
 
@@ -190,43 +256,10 @@ canvas.pack(side="left", fill="both", expand=True)
 root.mainloop()
 
 
-# In[ ]:
 
 
 
 
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
 
 
 
