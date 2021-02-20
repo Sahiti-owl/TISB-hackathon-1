@@ -88,7 +88,17 @@ def create_plot_1():
     file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
-    sns.barplot(x=file_data['Month'], y=file_data['Electricity'])
+    palette = {}
+    for x in set(file_data.Month):
+        average = (np.average(file_data[file_data.Month == x].Electricity))
+        if average < 200:
+            palette[x] = '#228B22'
+        elif average < 300:
+            palette[x] = '#32CD32'
+        else:
+            palette[x] = '#00FF00'
+    
+    sns.barplot(x=file_data['Month'], y=file_data['Electricity'], palette =palette )
     
     plt.xlabel("Months")
     plt.title("Electricity")
@@ -101,7 +111,16 @@ def create_plot_3():
     file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
-    sns.barplot(x=file_data['Month'], y=file_data['Water'])
+    palette = {}
+    for x in set(file_data.Month):
+        average = (np.average(file_data[file_data.Month == x].Water))
+        if average < 30000:
+            palette[x] = '#228B22'
+        elif average < 40000:
+            palette[x] = '#32CD32'
+        else:
+            palette[x] = '#00FF00'
+    sns.barplot(x=file_data['Month'], y=file_data['Water'], palette = palette)
     
     plt.xlabel("Months")
     plt.title("Water")
@@ -187,7 +206,16 @@ def create_plot_2():
     file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
-    sns.barplot(x=file_data['Month'], y=file_data['Green_score'])
+    palette = {}
+    for x in set(file_data.Month):
+        average = (np.average(file_data[file_data.Month == x].Green_score))
+        if average > 75:
+            palette[x] = '#228B22'
+        elif average >55:
+            palette[x] = '#32CD32'
+        else:
+            palette[x] = '#00FF00'
+    sns.barplot(x=file_data['Month'], y=file_data['Green_score'], palette = palette)
     
     plt.xlabel("Months")
     plt.title("Green scores")
@@ -195,12 +223,18 @@ def create_plot_2():
 
 # Plot the graph to compare house electricity usage as compared to neighborhood average
 def create_electricity_neighborplot():
+    file_data = pd.read_csv(file_path)
     global electricity_dict
     people_electricity_data =file_data["Electricity"].tolist()
+   
     electricity_average = sum(people_electricity_data)/ len(people_electricity_data)
+    
     personal_data = file_data.loc[(file_data['HouseID'] == house_number),["Electricity"]].values
-    personal_average = list(sum(personal_data)/len(personal_data))
+    
+    personal_average = sum(personal_data)/len(personal_data)
+    
     electricity_dict = {"You":personal_average, "Neighborhood average": electricity_average}
+    
     electricity_dataframe = pd.DataFrame(electricity_dict)
     
     graph = plt.figure(figsize =(14,2))
@@ -211,6 +245,7 @@ def create_electricity_neighborplot():
 
 # Plot the graph to compare house water usage as compared to neighborhood average
 def create_water_neighborplot():
+    file_data = pd.read_csv(file_path)
     global water_dict
     people_water_data =file_data["Water"].tolist()
     water_average = sum(people_water_data)/ len(people_water_data)
@@ -398,7 +433,7 @@ def create_leaderboard_tab(leaderboard_container):
     rank =leaderboard_data.loc[(leaderboard_data["HouseID"]==house_number),['index']].values[0]
     
     
-    rankLabel = Label(leaderboard_frame, text="Your rank is " + str(rank[0] + "for " + month))
+    rankLabel = Label(leaderboard_frame, text="Your rank is " + str(rank[0]) + " for " + month)
     rankLabel.config(font=("Courier", 15), fg="green")
     rankLabel.pack()   
     treeview_table.pack(fill=BOTH, expand=True)
@@ -459,7 +494,7 @@ def create_report_view():
    
     notebook.add(container, text=" Green Report ")
     notebook.add(predictions_container, text=" Consumption History and Predictions ")
-    notebook.add(leaderboard_container, text=" Neigherborhood Leaderboard ")
+    notebook.add(leaderboard_container, text=" Neighborhood Leaderboard ")
     notebook.add(update_container, text=" Update Profile ")
     
   
