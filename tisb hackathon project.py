@@ -28,9 +28,7 @@ current_date = date.today() # get the current date to display current month deta
 month = numbers_to_month[current_date.month]
 electricity_dict = {}
 water_dict={}
-house_number=1 # default
-
-
+house_number=0 #default
 
 # Generate the Green score 
 # Green Score is computed based on electricity and water consumption. We factor in the number of people of living in the houses
@@ -260,6 +258,7 @@ def create_water_neighborplot():
     return graph
 
 
+
 # Tab to show the current month water usage, electricity usage and green score
 def create_main_tab(container):
     canvas = tk.Canvas(container)
@@ -281,7 +280,7 @@ def create_main_tab(container):
     water = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Water"]].values[0]
     score = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Green_score"]].values[0]
  
-    label = tk.Label(scrollable_frame, text = 'House # ' +str(house_number) + " Green Report", fg = "green", height = 2, anchor ='n', underline = 8)
+    label = tk.Label(scrollable_frame, text = 'House # ' +str(house_number) + " Green Citizen Report", fg = "green", height = 2, anchor ='n', underline = 8)
     label.config(font=("Courier", 44))
     label.pack()
     
@@ -347,8 +346,9 @@ def create_main_tab(container):
         
     water_average_label.config(font=("Courier", 13), fg="green")
     water_average_label.pack(padx= 10, pady = 20)
-    #scrollable_frame.pack(side="left", fill="both", expand=True)
+    
     canvas.pack(side="left", fill="both", expand=True)
+    
 
 # Tab to update the house owner profile
 def create_update_tab(update_container):
@@ -384,6 +384,7 @@ def create_update_tab(update_container):
         
     update_frame.pack()
     update_canvas.pack(side="left", fill="both", expand=True)
+    
     
 #Create a tab to show the Green score leaderboard
 def create_leaderboard_tab(leaderboard_container):
@@ -451,7 +452,7 @@ def house_selected(event):
 def create_home_tab():
     global house_number
     house_values = list(range(1,100))
-    welcome_label = tk.Label(login_frame, text="Welcome to APR Green Report")
+    welcome_label = tk.Label(login_frame, text="Welcome to APR Green Citizen Report")
     welcome_label.config(font=("Courier", 30, "bold"), fg = "green")
     welcome_label.pack(side=TOP, pady=30)
     
@@ -472,7 +473,7 @@ def create_home_tab():
     login_canvas.pack(side="left", fill="both", expand=True, anchor="center")
     
     
-#Create a multi tab view to show the Green report for the house, leaderboard, update profile and predictions    
+#Create a multi tab view to show the Green Citizen report for the house, leaderboard, update profile and predictions    
 def create_report_view():
    
     notebook = ttk.Notebook(root)
@@ -490,9 +491,7 @@ def create_report_view():
     leaderboard_container.pack()
     home_container.pack()
     
-    #notebook.add(home_container, text="Home")
-   
-    notebook.add(container, text=" Green Report ")
+    notebook.add(container, text=" Green Citizen Report ")
     notebook.add(predictions_container, text=" Consumption History and Predictions ")
     notebook.add(leaderboard_container, text=" Neighborhood Leaderboard ")
     notebook.add(update_container, text=" Update Profile ")
@@ -506,11 +505,10 @@ def create_report_view():
     create_main_tab(container)
         
 root = tk.Tk()
-root.minsize(1200, 500)
-root.title("Green Report")
+root.minsize(1200, 600)
+root.title("Green Citizen Report")
 login_canvas = tk.Canvas(root)
 login_frame = Frame(login_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=100, height=100, bd= 0, padx = 100)
 create_home_tab()  
-#create_report_view()
 
 root.mainloop()
