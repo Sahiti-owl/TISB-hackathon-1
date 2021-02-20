@@ -15,49 +15,39 @@ from PIL import Image, ImageTk
 from datetime import date
 import os
 
-file_path = "C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv"
-image_file_path = "C:/Users/aparna/Desktop/levels.png"
+file_path = "./energy_consumption_2021_Sahiti.csv"
+image_file_path = "./levels.png"
+
 file_data = pd.read_csv(file_path)
 months = ['January','February', 'March','April','May','June','July','August','September','October','November','December']
 numbers_to_month = {1:'January', 2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
 key = {'January': 1, 'February': 2, 'March':3, 'April':4, 'May': 5, 'June': 6, 'July': 7, 'August':8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
 
 
-current_date = date.today()
+current_date = date.today() # get the current date to display current month details
 month = numbers_to_month[current_date.month]
 electricity_dict = {}
 water_dict={}
-house_number=1
+house_number=1 # default
 
-def house_no(house_no):
-    global house_number
-    if len(house_no)>0:
-        print("came here")
-        #house_number = house_no
-       # create_main_tab(container)
-        generate_green_score()
-        create_update_tab(update_container)
-        create_leaderboard_tab(leaderboard_container)
-       
-   
 
 # Generate the Green score 
+# Green Score is computed based on electricity and water consumption. We factor in the number of people of living in the houses
+#and give additional points if household owns green vehicles
+# Green score is computed by getting percentile ranking for electricity and water usage per person first and then getting the
+#average of the percentile values in a range of 0 to 100
 def generate_green_score():
     x = 0.9
     y = 2.1
     electricity_scores = []
     water_scores = []
     global house_number
-    print('house_number1',house_number)
+    
     for month in months:
         monthwise_electricity = file_data.loc[(file_data['Month'] == month)]
-        print(house_number)
         monthwise_electricity["rank"]=monthwise_electricity.Electricity_per_person.rank(pct = True)
-        print(monthwise_electricity[["rank","HouseID"]])
-        print(monthwise_electricity['HouseID'] )
-        print(monthwise_electricity.loc[(monthwise_electricity['HouseID'] == 1)].values)
+     
         test = monthwise_electricity.loc[(monthwise_electricity['HouseID'] == house_number),["rank"]].values
-        print(test)
         electricity_scores.append(monthwise_electricity.loc[(monthwise_electricity['HouseID']==house_number), "rank"])
         monthwise_water = file_data.loc[(file_data['Month'] == month)]
         monthwise_water["rank"]=monthwise_water.Water_per_person.rank(pct = True)
@@ -67,25 +57,28 @@ def generate_green_score():
             green_score = (monthwise_electricity.loc[(monthwise_electricity['HouseID']==x), "rank"].values[0] +monthwise_water.loc[(monthwise_water['HouseID']==x), "rank"].values[0])/2
             green_score = green_score*100
             file_data.loc[(file_data['HouseID']==x) & (file_data['Month']==month),"Green_score"]= round((100-green_score),2)
-            #os.remove("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv")
-            #file_data.to_csv("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv", index = False)
             os.remove(file_path)
             file_data.to_csv(file_path, index=False)
 
 # Function to submit the profile updates
-def submit_button_function(people_entry, vehicles_entry):
+def submit_button_function(people_entry_get, vehicles_entry_get, update_frame, people_entry, vehicles_entry):
    
     file_data = pd.read_csv(file_path)
     people_data = people_entry.get()
     vehicles_data = vehicles_entry.get()
     if len(vehicles_data)>0:
         file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),"Num_Green_Vehicles"]= vehicles_data
-        print(file_data)
+        
     if len(people_data)>0:
         file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),"Num_People"]= people_data
-        print(file_data)
+        
     os.remove(file_path)
     file_data.to_csv(file_path, index = False)
+    success = Label(update_frame, text = "UPDATE SUCCESSFUL")
+    success.config(font=("Courier", 15, "italic", "bold"), fg = "green")
+    success.pack()
+    people_entry.delete(0,"end")
+    vehicles_entry.delete(0,"end")
     
 # Plot graph to show Electricity usage  
 def create_plot_1():
@@ -133,6 +126,10 @@ def create_predictions_tab(container):
     canvas.configure(xscrollcommand=xscrollbar.set)
     canvas.config(height = 650, width = 1100)
     
+    description_label = tk.Label(scrollable_frame, text="Annual Consumption and next month predictions")
+    description_label.config(font=("Courier", 20, "bold"), fg = "green")
+    description_label.pack(side=TOP)
+    
     for month in months:
         per_month_elec = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Electricity"]].values[0]
         electricity_store.append(per_month_elec)
@@ -152,7 +149,7 @@ def create_predictions_tab(container):
     canvas_1 = FigureCanvasTkAgg(fig, scrollable_frame)  
     canvas_1.get_tk_widget().pack()
     
-    electricity_prediction = Label(scrollable_frame, text = "Your predicted electricity for next month is in the range of : " + str(round(lower_electricity[0],2)) +'to'+ str(round(upper_electricity[0],2)) + " kilowatts", fg = 'green', underline = 0)
+    electricity_prediction = Label(scrollable_frame, text = "Your predicted electricity for next month is in the range of : " + str(round(lower_electricity[0],2)) +' to '+ str(round(upper_electricity[0],2)) + " kilowatts", fg = 'green', underline = 0)
     electricity_prediction.config(font=("Courier", 15))
     electricity_prediction.pack(padx = 20, pady = 20)  
     water_var = [(x-water_mean)**2 for x in water_store]
@@ -164,7 +161,7 @@ def create_predictions_tab(container):
     fig_2 = create_plot_3()
     canvas_2 = FigureCanvasTkAgg(fig_2, scrollable_frame)  
     canvas_2.get_tk_widget().pack()
-    water_prediction = Label(scrollable_frame, text = "Your predicted water usage for next month is in the range of : " + str(round(lower_water[0],2)) +"to"+ str(round(upper_water[0],2)) + " litres", fg = 'green', underline = 0 )
+    water_prediction = Label(scrollable_frame, text = "Your predicted water usage for next month is in the range of : " + str(round(lower_water[0],2)) +" to "+ str(round(upper_water[0],2)) + " litres", fg = 'green', underline = 0 )
     water_prediction.config(font=("Courier", 15))
     water_prediction.pack(padx = 20, pady = 30)  
     green_score_var = [(x-green_score_mean)**2 for x in green_score_store]
@@ -175,7 +172,7 @@ def create_predictions_tab(container):
     fig_2 = create_plot_2()
     canvas_2 = FigureCanvasTkAgg(fig_2, scrollable_frame)  
     canvas_2.get_tk_widget().pack()
-    green_score_prediction = Label(scrollable_frame, text = "Your predicted green score for next month is in the range of : " + str(round(lower_green_score[0],2)) +"to"+ str(round(upper_green_score[0],2)) , fg = 'green', underline = 0 )
+    green_score_prediction = Label(scrollable_frame, text = "Your predicted green score for next month is in the range of : " + str(round(lower_green_score[0],2)) +" to "+ str(round(upper_green_score[0],2)) , fg = 'green', underline = 0 )
     green_score_prediction.config(font=("Courier", 15))
     green_score_prediction.pack(padx = 20, pady=30)
     
@@ -248,7 +245,7 @@ def create_main_tab(container):
     water = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Water"]].values[0]
     score = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Green_score"]].values[0]
  
-    label = tk.Label(scrollable_frame, text = 'House # ' +str(house_number) + " Green report", fg = "green", height = 2, anchor ='n', underline = 8)
+    label = tk.Label(scrollable_frame, text = 'House # ' +str(house_number) + " Green Report", fg = "green", height = 2, anchor ='n', underline = 8)
     label.config(font=("Courier", 44))
     label.pack()
     
@@ -334,6 +331,10 @@ def create_update_tab(update_container):
     update_canvas.configure(xscrollcommand=update_xscrollbar.set)
     update_canvas.config(height = 650, width = 1100)
     
+    description_label = tk.Label(update_frame, text="Update your profile")
+    description_label.config(font=("Courier", 20, "italic", "bold"), fg = "green")
+    description_label.pack(side=TOP)
+    
     people_label = Label(update_frame, text = 'Number of people')
     people_label.pack()
     people_entry = Entry(update_frame)
@@ -342,7 +343,7 @@ def create_update_tab(update_container):
     vehicles_label.pack()
     vehicles_entry = Entry(update_frame)
     vehicles_entry.pack()
-    submit = Button(update_frame, text = "submit", command = lambda:submit_button_function(people_entry, vehicles_entry))
+    submit = Button(update_frame, text = "submit", command = lambda:submit_button_function(people_entry, vehicles_entry, update_frame, people_entry, vehicles_entry))
     submit.pack()
         
     update_frame.pack()
@@ -367,16 +368,16 @@ def create_leaderboard_tab(leaderboard_container):
     leaderboard_canvas.configure(xscrollcommand=leaderboard_xscrollbar.set)
     leaderboard_canvas.config(height = 650, width = 1100)
     
+    description_label = tk.Label(leaderboard_frame, text="Community Leaderboard")
+    description_label.config(font=("Courier", 20, "bold"), fg = "green")
+    description_label.pack(side=TOP)
+    
     rank =0
     rankLabel = Label(leaderboard_frame, text="Your rank is 0")
     rankLabel.config(font=("Courier", 13), fg="green")
     rankLabel.pack()
     leaderboard_data = file_data[['HouseID','Month','Green_score']]
     leaderboard_data = leaderboard_data.sort_values('Green_score', ascending=False)
-    print(leaderboard_data)
-    current_position =leaderboard_data.loc[(leaderboard_data['HouseID'] == house_number) & (leaderboard_data["HouseID"])].index.values
-    print("current position",current_position)
-    print(leaderboard_data.index)
     
     treeview_table["column"]= list(leaderboard_data.columns)
     treeview_table["show"]="headings"
@@ -395,28 +396,40 @@ def create_leaderboard_tab(leaderboard_container):
     leaderboard_canvas.pack(side="left", fill="both", expand=True)
     
 
+def house_selected(event):
+    global house_number
+    
+    if(event.widget.get() != ""):
+        house_number = int(event.widget.get())
 
 # Create the first view for user to select the house #    
-def create_home_tab(home_container):
+def create_home_tab():
     global house_number
     house_values = list(range(1,100))
-    login_canvas = tk.Canvas(home_container)
-    login_frame = Frame(login_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=500, height=500, bd= 0, padx = 100)
-
-    house_label = Label(login_frame, text="Select house #", padx=50).pack(side=LEFT)
+    welcome_label = tk.Label(login_frame, text="Welcome to APR Green Report")
+    welcome_label.config(font=("Courier", 30, "bold"), fg = "green")
+    welcome_label.pack(side=TOP, pady=30)
+    
+    description_label = tk.Label(login_frame, text="Know how Green you and your family with just a click of button !!!")
+    description_label.config(font=("Courier", 20, "italic", "bold"), fg = "green")
+    description_label.pack(side=TOP)
+    
+    house_label = Label(login_frame, text="Select house #", padx=50)
+    house_label.config(font=("Courier", 20), fg = "green")
+    house_label.pack(side=LEFT)
     house_dropdown = ttk.Combobox(login_frame)
     house_dropdown.pack(side=LEFT, padx = 50)
     house_dropdown['values'] = house_values
-    #house_number = house_dropdown.get()
-    print('house_number',house_number)
-    go_button = Button(login_frame, text="Set", height="2", width="10", command = lambda:house_no(house_dropdown.get())).pack(side=RIGHT)
+    house_dropdown.bind("<<ComboboxSelected>>", house_selected)
+    go_button = Button(login_frame, text="Set", height="2", width="15", command = create_report_view).pack(side=LEFT)
     
     login_frame.pack(side="left", fill="both", expand=True, anchor="center")
     login_canvas.pack(side="left", fill="both", expand=True, anchor="center")
     
+    
 #Create a multi tab view to show the Green report for the house, leaderboard, update profile and predictions    
 def create_report_view():
-          
+   
     notebook = ttk.Notebook(root)
     notebook.pack(fill=BOTH, expand=True)
     notebook.pressed_index = None
@@ -432,25 +445,27 @@ def create_report_view():
     leaderboard_container.pack()
     home_container.pack()
     
-    notebook.add(home_container, text="Home")
-    notebook.add(update_container, text="Update Profile")
-    notebook.add(leaderboard_container, text="Leaderboard")
-    notebook.add(container, text="Green Report")
-    notebook.add(predictions_container, text="Predictions")
+    #notebook.add(home_container, text="Home")
+   
+    notebook.add(container, text=" Green Report ")
+    notebook.add(predictions_container, text=" Consumption History and Predictions ")
+    notebook.add(leaderboard_container, text=" Neigherborhood Leaderboard ")
+    notebook.add(update_container, text=" Update Profile ")
     
-    
-    #create_home_tab(home_container)  
+  
     generate_green_score()
+    login_canvas.destroy()
     create_leaderboard_tab(leaderboard_container)
     create_update_tab(update_container)
     create_predictions_tab(predictions_container)
     create_main_tab(container)
-    
-    
-
-
-
+        
 root = tk.Tk()
-create_report_view()
+root.minsize(1200, 500)
+root.title("Green Report")
+login_canvas = tk.Canvas(root)
+login_frame = Frame(login_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=100, height=100, bd= 0, padx = 100)
+create_home_tab()  
+#create_report_view()
 
 root.mainloop()
