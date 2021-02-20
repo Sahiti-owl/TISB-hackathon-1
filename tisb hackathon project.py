@@ -16,58 +16,82 @@ from datetime import date
 import os
 
 file_path = "C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv"
+image_file_path = "C:/Users/aparna/Desktop/levels.png"
 file_data = pd.read_csv(file_path)
 months = ['January','February', 'March','April','May','June','July','August','September','October','November','December']
 numbers_to_month = {1:'January', 2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
 key = {'January': 1, 'February': 2, 'March':3, 'April':4, 'May': 5, 'June': 6, 'July': 7, 'August':8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
 
-villa_no = 1
+
 current_date = date.today()
 month = numbers_to_month[current_date.month]
 electricity_dict = {}
 water_dict={}
+house_number=1
 
- 
+def house_no(house_no):
+    global house_number
+    if len(house_no)>0:
+        print("came here")
+        #house_number = house_no
+       # create_main_tab(container)
+        generate_green_score()
+        create_update_tab(update_container)
+        create_leaderboard_tab(leaderboard_container)
+       
+   
+
+# Generate the Green score 
 def generate_green_score():
     x = 0.9
     y = 2.1
     electricity_scores = []
     water_scores = []
-        
+    global house_number
+    print('house_number1',house_number)
     for month in months:
         monthwise_electricity = file_data.loc[(file_data['Month'] == month)]
+        print(house_number)
         monthwise_electricity["rank"]=monthwise_electricity.Electricity_per_person.rank(pct = True)
-        electricity_scores.append(monthwise_electricity.loc[(monthwise_electricity['HouseID']==villa_no), "rank"].values[0])
+        print(monthwise_electricity[["rank","HouseID"]])
+        print(monthwise_electricity['HouseID'] )
+        print(monthwise_electricity.loc[(monthwise_electricity['HouseID'] == 1)].values)
+        test = monthwise_electricity.loc[(monthwise_electricity['HouseID'] == house_number),["rank"]].values
+        print(test)
+        electricity_scores.append(monthwise_electricity.loc[(monthwise_electricity['HouseID']==house_number), "rank"])
         monthwise_water = file_data.loc[(file_data['Month'] == month)]
         monthwise_water["rank"]=monthwise_water.Water_per_person.rank(pct = True)
-        water_scores.append(monthwise_water.loc[(monthwise_water['HouseID']==villa_no), "rank"].values[0])
+        water_scores.append(monthwise_water.loc[(monthwise_water['HouseID']==house_number), "rank"].values[0])
      
         for x in range(1, len(monthwise_electricity)+1):
             green_score = (monthwise_electricity.loc[(monthwise_electricity['HouseID']==x), "rank"].values[0] +monthwise_water.loc[(monthwise_water['HouseID']==x), "rank"].values[0])/2
             green_score = green_score*100
             file_data.loc[(file_data['HouseID']==x) & (file_data['Month']==month),"Green_score"]= round((100-green_score),2)
-            os.remove("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv")
-            file_data.to_csv("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv", index = False)
+            #os.remove("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv")
+            #file_data.to_csv("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv", index = False)
+            os.remove(file_path)
+            file_data.to_csv(file_path, index=False)
 
-def submitButtonFunction(people_entry, vehicles_entry):
+# Function to submit the profile updates
+def submit_button_function(people_entry, vehicles_entry):
    
-    file_data = pd.read_csv("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv")
+    file_data = pd.read_csv(file_path)
     people_data = people_entry.get()
     vehicles_data = vehicles_entry.get()
     if len(vehicles_data)>0:
-        file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),"Num_Green_Vehicles"]= vehicles_data
+        file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),"Num_Green_Vehicles"]= vehicles_data
         print(file_data)
     if len(people_data)>0:
-        file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),"Num_People"]= people_data
+        file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),"Num_People"]= people_data
         print(file_data)
-    os.remove("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv")
-    file_data.to_csv("C:/Users/aparna/Downloads/energy_consumption_2021_Sahiti.csv", index = False)
+    os.remove(file_path)
+    file_data.to_csv(file_path, index = False)
     
-    
+# Plot graph to show Electricity usage  
 def create_plot_1():
     global file_data
-    global villa_no
-    file_data.query('HouseID == @villa_no ', inplace = True)
+    global house_number
+    file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
     sns.barplot(x=file_data['Month'], y=file_data['Electricity'])
@@ -76,10 +100,11 @@ def create_plot_1():
     plt.title("Electricity")
     return graph
 
+# Plot graph to show water usage
 def create_plot_3():
     global file_data
-    global villa_no
-    file_data.query('HouseID == @villa_no ', inplace = True)
+    global house_number
+    file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
     sns.barplot(x=file_data['Month'], y=file_data['Water'])
@@ -88,7 +113,8 @@ def create_plot_3():
     plt.title("Water")
     return graph
 
-def createPredictionsTab(container):
+# Tab to show the Predictions for electricity, water and green score for next month. Also shows the graphs for annual usage
+def create_predictions_tab(container):
     global months
     electricity_store = []
     water_store = []
@@ -108,11 +134,11 @@ def createPredictionsTab(container):
     canvas.config(height = 650, width = 1100)
     
     for month in months:
-        per_month_elec = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Electricity"]].values[0]
+        per_month_elec = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Electricity"]].values[0]
         electricity_store.append(per_month_elec)
-        per_month_water = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Water"]].values[0]
+        per_month_water = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Water"]].values[0]
         water_store.append(per_month_water)
-        per_month_green_score = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Green_score"]].values[0]
+        per_month_green_score = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Green_score"]].values[0]
         green_score_store.append(per_month_green_score)
     electricity_mean = sum(electricity_store)/len(electricity_store)
     water_mean = sum(water_store)/len(water_store)
@@ -126,9 +152,9 @@ def createPredictionsTab(container):
     canvas_1 = FigureCanvasTkAgg(fig, scrollable_frame)  
     canvas_1.get_tk_widget().pack()
     
-    electricity_prediction = Label(scrollable_frame, text = "Your predicted electricity for next month is in the range of : " + str(round(lower_electricity[0],2)) +'-'+ str(round(upper_electricity[0],2)), fg = 'green', underline = 0)
-    electricity_prediction.config(font=("Courier", 13))
-    electricity_prediction.pack()  
+    electricity_prediction = Label(scrollable_frame, text = "Your predicted electricity for next month is in the range of : " + str(round(lower_electricity[0],2)) +'to'+ str(round(upper_electricity[0],2)) + " kilowatts", fg = 'green', underline = 0)
+    electricity_prediction.config(font=("Courier", 15))
+    electricity_prediction.pack(padx = 20, pady = 20)  
     water_var = [(x-water_mean)**2 for x in water_store]
     water_std = math.sqrt(sum(water_var)/len(water_var))
     water_ste = water_std/(math.sqrt(len(water_store)))
@@ -138,9 +164,9 @@ def createPredictionsTab(container):
     fig_2 = create_plot_3()
     canvas_2 = FigureCanvasTkAgg(fig_2, scrollable_frame)  
     canvas_2.get_tk_widget().pack()
-    water_prediction = Label(scrollable_frame, text = "Your predicted water usage for next month is in the range of : " + str(round(lower_water[0],2)) +"-"+ str(round(upper_water[0],2)), fg = 'green', underline = 0 )
-    water_prediction.config(font=("Courier", 13))
-    water_prediction.pack()  
+    water_prediction = Label(scrollable_frame, text = "Your predicted water usage for next month is in the range of : " + str(round(lower_water[0],2)) +"to"+ str(round(upper_water[0],2)) + " litres", fg = 'green', underline = 0 )
+    water_prediction.config(font=("Courier", 15))
+    water_prediction.pack(padx = 20, pady = 30)  
     green_score_var = [(x-green_score_mean)**2 for x in green_score_store]
     green_score_std = math.sqrt(sum(green_score_var)/len(green_score_var))
     green_score_ste = green_score_std/(math.sqrt(len(green_score_store)))
@@ -149,18 +175,18 @@ def createPredictionsTab(container):
     fig_2 = create_plot_2()
     canvas_2 = FigureCanvasTkAgg(fig_2, scrollable_frame)  
     canvas_2.get_tk_widget().pack()
-    green_score_prediction = Label(scrollable_frame, text = "Your predicted green score for next month is in the range of : " + str(round(lower_green_score[0],2)) +"-"+ str(round(upper_green_score[0],2)), fg = 'green', underline = 0 )
-    green_score_prediction.config(font=("Courier", 13))
-    green_score_prediction.pack()
+    green_score_prediction = Label(scrollable_frame, text = "Your predicted green score for next month is in the range of : " + str(round(lower_green_score[0],2)) +"to"+ str(round(upper_green_score[0],2)) , fg = 'green', underline = 0 )
+    green_score_prediction.config(font=("Courier", 15))
+    green_score_prediction.pack(padx = 20, pady=30)
     
-    scrollable_frame.pack(side="left", fill="both", expand=True)
+    #scrollable_frame.pack(side="left", fill="both", expand=True)
     canvas.pack(side="left", fill="both", expand=True)
 
-    
+# Plot the graph to show annual Green Score for the house    
 def create_plot_2():
     global file_data
-    global villa_no
-    file_data.query('HouseID == @villa_no ', inplace = True)
+    global house_number
+    file_data.query('HouseID == @house_number ', inplace = True)
  
     graph = plt.figure(figsize=(12, 4))
     sns.barplot(x=file_data['Month'], y=file_data['Green_score'])
@@ -169,38 +195,40 @@ def create_plot_2():
     plt.title("Green scores")
     return graph
 
+# Plot the graph to compare house electricity usage as compared to neighborhood average
 def create_electricity_neighborplot():
     global electricity_dict
     people_electricity_data =file_data["Electricity"].tolist()
     electricity_average = sum(people_electricity_data)/ len(people_electricity_data)
-    personal_data = file_data.loc[(file_data['HouseID'] == villa_no),["Electricity"]].values
+    personal_data = file_data.loc[(file_data['HouseID'] == house_number),["Electricity"]].values
     personal_average = list(sum(personal_data)/len(personal_data))
-    electricity_dict = {"You":personal_average, "Neighbor average": electricity_average}
+    electricity_dict = {"You":personal_average, "Neighborhood average": electricity_average}
     electricity_dataframe = pd.DataFrame(electricity_dict)
     
-    graph = plt.figure(figsize =(12,2))
+    graph = plt.figure(figsize =(14,2))
     sns.barplot(data = electricity_dataframe, orient = "h")
     plt.title("Electricity: You vs Neighbors")
     
     return graph
 
+# Plot the graph to compare house water usage as compared to neighborhood average
 def create_water_neighborplot():
     global water_dict
     people_water_data =file_data["Water"].tolist()
     water_average = sum(people_water_data)/ len(people_water_data)
-    personal_data = file_data.loc[(file_data['HouseID'] == villa_no),["Water"]].values
+    personal_data = file_data.loc[(file_data['HouseID'] == house_number),["Water"]].values
     personal_average = list(sum(personal_data)/len(personal_data))
-    water_dict = {"You":personal_average, "Neighbor average": water_average}
+    water_dict = {"You":personal_average, "Neighborhood average": water_average}
     water_dataframe = pd.DataFrame(water_dict)
     
-    graph = plt.figure(figsize =(12,2))
+    graph = plt.figure(figsize =(14,2))
     sns.barplot(data = water_dataframe, orient = "h")
     plt.title("Water usage: You vs Neighbors")
     return graph
 
 
-
-def createMainTab(container):
+# Tab to show the current month water usage, electricity usage and green score
+def create_main_tab(container):
     canvas = tk.Canvas(container)
     scrollable_frame = Frame(canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=500, height=500, bd= 0, padx = 100)
     yscrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
@@ -215,11 +243,12 @@ def createMainTab(container):
     canvas.configure(yscrollcommand=yscrollbar.set)
     canvas.configure(xscrollcommand=xscrollbar.set)
     canvas.config(height = 650, width = 1100)
-
-
     
-    
-    label = tk.Label(scrollable_frame, text = 'Villa ' +str(villa_no) + " green report", fg = "green", height = 2, anchor ='n', underline = 8)
+    electricity = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Electricity"]].values[0]
+    water = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Water"]].values[0]
+    score = file_data.loc[(file_data['HouseID'] == house_number) & (file_data['Month'] == month),["Green_score"]].values[0]
+ 
+    label = tk.Label(scrollable_frame, text = 'House # ' +str(house_number) + " Green report", fg = "green", height = 2, anchor ='n', underline = 8)
     label.config(font=("Courier", 44))
     label.pack()
     
@@ -235,7 +264,7 @@ def createMainTab(container):
     water_label.config(font=("Courier", 20))
     water_label.pack()
 
-    green_score_label = tk.Label(scrollable_frame, text = "green score:" + str(score[0]), fg = 'green', underline = 0, anchor = 'w')
+    green_score_label = tk.Label(scrollable_frame, text = "Green score:" + str(score[0]), fg = 'green', underline = 0, anchor = 'w')
     green_score_label.config(font=("Courier", 20))
     green_score_label.pack()
 
@@ -250,47 +279,46 @@ def createMainTab(container):
     else:
         describe_score = 'EXCELLENT!!!'
         
-    general_label = tk.Label(scrollable_frame, text = "green score is " + describe_score, fg = 'green', underline = 0, anchor = 'w')
+    general_label = tk.Label(scrollable_frame, text = "Green score is " + describe_score, fg = 'green', underline = 0, anchor = 'w')
     general_label.config(font=("Courier", 20))
     general_label.pack()
 
-    #levels_image_path = Image.open("C:/Users/aparna/Desktop/levels.png")
-    #levels_image_path = levels_image_path.resize((200,130),Image.ANTIALIAS)
-    #test = ImageTk.PhotoImage(levels_image_path)
+    levels_image_path = Image.open(image_file_path)
+    levels_image_path = levels_image_path.resize((200,130),Image.ANTIALIAS)
+    test = ImageTk.PhotoImage(levels_image_path)
 
-    #levels_image = Label(scrollable_frame,image=test)
-    #levels_image.image = test
-    #levels_image.pack()
+    levels_image = Label(scrollable_frame,image=test)
+    levels_image.image = test
+    levels_image.pack(pady = 20)
     
     fig_electric = create_electricity_neighborplot()
     canvas_5 = FigureCanvasTkAgg(fig_electric, scrollable_frame)  
     canvas_5.get_tk_widget().pack()
     
-    if electricity_dict["You"][0]> electricity_dict["Neighbor average"]:
-        electricity_average_label = Label(scrollable_frame, text = "Your electricity usage is "+ str(round(electricity_dict["You"][0]-electricity_dict["Neighbor average"]))+" kilowatts greater than your average neighbor's")
+    if electricity_dict["You"][0]> electricity_dict["Neighborhood average"]:
+        electricity_average_label = Label(scrollable_frame, text = "Your electricity usage is "+ str(round(electricity_dict["You"][0]-electricity_dict["Neighborhood average"]))+" kilowatts greater than your average neighbor's")
     else:
-        electricity_average_label = Label(scrollable_frame, text = "Your electricity usage is "+ str(round(electricity_dict["Neighbor average"]-electricity_dict["You"][0]))+" kilowatts less than your average neighbor's")
+        electricity_average_label = Label(scrollable_frame, text = "Your electricity usage is "+ str(round(electricity_dict["Neighborhood average"]-electricity_dict["You"][0]))+" kilowatts less than your average neighbor's")
         
     electricity_average_label.config(font=("Courier", 13), fg = "green")
-    electricity_average_label.pack()  
+    electricity_average_label.pack(padx = 10, pady = 20)  
     
     fig_water = create_water_neighborplot()
     canvas_6 = FigureCanvasTkAgg(fig_water, scrollable_frame)  
     canvas_6.get_tk_widget().pack()
     
-    if water_dict["You"][0]> water_dict["Neighbor average"]:
-        water_average_label = Label(scrollable_frame, text = "Your water usage is "+ str(round(water_dict["You"][0]-water_dict["Neighbor average"]))+" litres greater than your average neighbor's")
+    if water_dict["You"][0]> water_dict["Neighborhood average"]:
+        water_average_label = Label(scrollable_frame, text = "Your water usage is "+ str(round(water_dict["You"][0]-water_dict["Neighborhood average"]))+" litres greater than your average neighbor's")
     else:
-        water_average_label = Label(scrollable_frame, text = "Your water usage is "+ str(round(water_dict["Neighbor average"]-water_dict["You"][0]))+" litres less than your average neighbor's")
+        water_average_label = Label(scrollable_frame, text = "Your water usage is "+ str(round(water_dict["Neighborhood average"]-water_dict["You"][0]))+" litres less than your average neighbor's")
         
     water_average_label.config(font=("Courier", 13), fg="green")
-    water_average_label.pack()
-    scrollable_frame.pack(side="left", fill="both", expand=True)
+    water_average_label.pack(padx= 10, pady = 20)
+    #scrollable_frame.pack(side="left", fill="both", expand=True)
     canvas.pack(side="left", fill="both", expand=True)
 
-
-
-def createUpdateTab(update_container):
+# Tab to update the house owner profile
+def create_update_tab(update_container):
     update_canvas = tk.Canvas(update_container)
     update_frame = Frame(update_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=500, height=500, bd= 0, padx = 100)
     update_yscrollbar = ttk.Scrollbar(update_canvas, orient="vertical", command=update_canvas.yview)
@@ -314,24 +342,20 @@ def createUpdateTab(update_container):
     vehicles_label.pack()
     vehicles_entry = Entry(update_frame)
     vehicles_entry.pack()
-    submit = Button(update_frame, text = "submit", command = lambda:submitButtonFunction(people_entry, vehicles_entry))
+    submit = Button(update_frame, text = "submit", command = lambda:submit_button_function(people_entry, vehicles_entry))
     submit.pack()
-    
-    
+        
     update_frame.pack()
     update_canvas.pack(side="left", fill="both", expand=True)
     
-
-def createLeaderboardTab(leaderboard_container):
+#Create a tab to show the Green score leaderboard
+def create_leaderboard_tab(leaderboard_container):
     global file_data
     leaderboard_canvas = tk.Canvas(leaderboard_container)
-    leaderboard_frame = LabelFrame(leaderboard_canvas)
+    leaderboard_frame = Frame(leaderboard_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=500, height=500, bd= 0, padx = 100)
+
     treeview_table = ttk.Treeview(leaderboard_frame)
     
-    #treescrolly = Scrollbar(leaderboard_frame, orient = 'vertical',command = treeview_table.yview)
-    #treeview_table.configure(yscrollcommand = treescrolly.set)
-    #treeview_table["displaycolumns"]= ("HouseID", "Year")
-    #treescrolly.pack(side = "right", fill= "y")
     leaderboard_yscrollbar = ttk.Scrollbar(leaderboard_canvas, orient="vertical", command=leaderboard_canvas.yview)
     leaderboard_xscrollbar = ttk.Scrollbar(leaderboard_canvas, orient="horizontal", command=leaderboard_canvas.xview)
     leaderboard_frame.bind("<Configure>",leaderboard_canvas.configure(scrollregion=leaderboard_canvas.bbox("all")) )
@@ -343,9 +367,16 @@ def createLeaderboardTab(leaderboard_container):
     leaderboard_canvas.configure(xscrollcommand=leaderboard_xscrollbar.set)
     leaderboard_canvas.config(height = 650, width = 1100)
     
+    rank =0
+    rankLabel = Label(leaderboard_frame, text="Your rank is 0")
+    rankLabel.config(font=("Courier", 13), fg="green")
+    rankLabel.pack()
     leaderboard_data = file_data[['HouseID','Month','Green_score']]
     leaderboard_data = leaderboard_data.sort_values('Green_score', ascending=False)
     print(leaderboard_data)
+    current_position =leaderboard_data.loc[(leaderboard_data['HouseID'] == house_number) & (leaderboard_data["HouseID"])].index.values
+    print("current position",current_position)
+    print(leaderboard_data.index)
     
     treeview_table["column"]= list(leaderboard_data.columns)
     treeview_table["show"]="headings"
@@ -363,38 +394,63 @@ def createLeaderboardTab(leaderboard_container):
     leaderboard_frame.pack(side="left", fill="both", expand=True)
     leaderboard_canvas.pack(side="left", fill="both", expand=True)
     
-    
-generate_green_score()
-electricity = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Electricity"]].values[0]
 
-water = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Water"]].values[0]
-score = file_data.loc[(file_data['HouseID'] == villa_no) & (file_data['Month'] == month),["Green_score"]].values[0]
+
+# Create the first view for user to select the house #    
+def create_home_tab(home_container):
+    global house_number
+    house_values = list(range(1,100))
+    login_canvas = tk.Canvas(home_container)
+    login_frame = Frame(login_canvas,highlightbackground="green", highlightcolor="green", highlightthickness=8, width=500, height=500, bd= 0, padx = 100)
+
+    house_label = Label(login_frame, text="Select house #", padx=50).pack(side=LEFT)
+    house_dropdown = ttk.Combobox(login_frame)
+    house_dropdown.pack(side=LEFT, padx = 50)
+    house_dropdown['values'] = house_values
+    #house_number = house_dropdown.get()
+    print('house_number',house_number)
+    go_button = Button(login_frame, text="Set", height="2", width="10", command = lambda:house_no(house_dropdown.get())).pack(side=RIGHT)
+    
+    login_frame.pack(side="left", fill="both", expand=True, anchor="center")
+    login_canvas.pack(side="left", fill="both", expand=True, anchor="center")
+    
+#Create a multi tab view to show the Green report for the house, leaderboard, update profile and predictions    
+def create_report_view():
+          
+    notebook = ttk.Notebook(root)
+    notebook.pack(fill=BOTH, expand=True)
+    notebook.pressed_index = None
+    
+    container = ttk.Frame(notebook)
+    predictions_container = ttk.Frame(notebook)
+    update_container = ttk.Frame(notebook)
+    leaderboard_container = ttk.Frame(notebook)
+    home_container = ttk.Frame(notebook)
+    container.pack()
+    predictions_container.pack()
+    update_container.pack()
+    leaderboard_container.pack()
+    home_container.pack()
+    
+    notebook.add(home_container, text="Home")
+    notebook.add(update_container, text="Update Profile")
+    notebook.add(leaderboard_container, text="Leaderboard")
+    notebook.add(container, text="Green Report")
+    notebook.add(predictions_container, text="Predictions")
+    
+    
+    #create_home_tab(home_container)  
+    generate_green_score()
+    create_leaderboard_tab(leaderboard_container)
+    create_update_tab(update_container)
+    create_predictions_tab(predictions_container)
+    create_main_tab(container)
+    
+    
+
+
 
 root = tk.Tk()
-#container = ttk.Frame(root)
-
-notebook = ttk.Notebook(root)
-notebook.pack(fill=BOTH, expand=True)
-notebook.pressed_index = None
-container = ttk.Frame(notebook)
-predictions_container = ttk.Frame(notebook)
-update_container = ttk.Frame(notebook)
-leaderboard_container = ttk.Frame(notebook)
-container.pack()
-predictions_container.pack()
-update_container.pack()
-leaderboard_container.pack()
-notebook.add(update_container, text="Update Profile")
-notebook.add(leaderboard_container, text="Leaderboard")
-notebook.add(container, text="Green Report")
-notebook.add(predictions_container, text="Predictions")
-
-
-createLeaderboardTab(leaderboard_container)
-createMainTab(container)
-createPredictionsTab(predictions_container)
-createUpdateTab(update_container)
- 
-print('score',score)
+create_report_view()
 
 root.mainloop()
