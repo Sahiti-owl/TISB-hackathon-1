@@ -31,6 +31,7 @@ water_dict={}
 house_number=1 # default
 
 
+
 # Generate the Green score 
 # Green Score is computed based on electricity and water consumption. We factor in the number of people of living in the houses
 #and give additional points if household owns green vehicles
@@ -372,26 +373,35 @@ def create_leaderboard_tab(leaderboard_container):
     description_label.config(font=("Courier", 20, "bold"), fg = "green")
     description_label.pack(side=TOP)
     
-    rank =0
-    rankLabel = Label(leaderboard_frame, text="Your rank is 0")
-    rankLabel.config(font=("Courier", 13), fg="green")
-    rankLabel.pack()
-    leaderboard_data = file_data[['HouseID','Month','Green_score']]
+    
+    leaderboard_data = file_data.loc[(file_data["Month"]==month),['HouseID','Month','Green_score']]
+    
     leaderboard_data = leaderboard_data.sort_values('Green_score', ascending=False)
+    
+    #leaderboard_data = file_data[['HouseID','Month','Green_score']]
+    
     
     treeview_table["column"]= list(leaderboard_data.columns)
     treeview_table["show"]="headings"
     treeview_table.column("#1", anchor="center", stretch=YES)
     treeview_table.column("#2", anchor="center", stretch=YES)
     treeview_table.column("#3", anchor="center", stretch=YES)
-    treeview_table.pack(fill=BOTH, expand=True)
+    
     for column in treeview_table["column"]:
         treeview_table.heading(column, text = column)
     table_data = leaderboard_data.to_numpy().tolist()
-    for row in table_data[0:15]:
+    for row in table_data[0:25]:
         treeview_table.insert("","end",values= row)
 
-       
+    leaderboard_data["index"] = list((range(1,len(leaderboard_data[['HouseID']].values)+1)))
+    
+    rank =leaderboard_data.loc[(leaderboard_data["HouseID"]==house_number),['index']].values[0]
+    
+    
+    rankLabel = Label(leaderboard_frame, text="Your rank is " + str(rank[0] + "for " + month))
+    rankLabel.config(font=("Courier", 15), fg="green")
+    rankLabel.pack()   
+    treeview_table.pack(fill=BOTH, expand=True)
     leaderboard_frame.pack(side="left", fill="both", expand=True)
     leaderboard_canvas.pack(side="left", fill="both", expand=True)
     
